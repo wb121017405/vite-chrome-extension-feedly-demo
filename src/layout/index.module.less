@@ -1,16 +1,27 @@
-.sider {
-  width: 60px !important;
-  max-width: 60px !important;
-  min-width: 60px !important;
-}
+@import '@/styles/variable.less';
 
-.menu{
+.mainLayout {
+  height: 600px;
+  width: 500px;
+  overflow: hidden;
+  .header {
+    color: @primary-color;
+    .header_op {
+      text-align: right;
+    }
+  }
+  .sider {
+    width: 60px !important;
+    max-width: 60px !important;
+    min-width: 60px !important;
+  }
+
+  .menu {
     width: 60px;
     height: 100%;
-}
-
-body {
-  width: 300px;
-  height: 300px;
-  overflow: hidden;
+  }
+  .mainContainer {
+    height: calc(100% - 60px);
+    padding: 12px;
+  }
 }
