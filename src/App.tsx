@@ -6,8 +6,6 @@ import Dashboard from '@/views/Dashboard';
 import HistoryList from '@/views/HistoryList';
 import { ConfigProvider } from 'antd';
 import 'antd/dist/antd.variable.min.css';
-import { useEffect } from 'react';
-import { getAuthUrl } from '@/api';
 
 ConfigProvider.config({
   theme: {
@@ -15,18 +13,6 @@ ConfigProvider.config({
   },
 });
 const App: React.FC = () => {
-  const HandleGetAuthUrl = async () => {
-    const res = await getAuthUrl({
-      response_type:"code",
-      client_id:"sandbox",
-      redirect_uri:"http://localhost:8000",
-      scope:"https://cloud.feedly.com/subscriptions",
-    });
-    console.log(res);
-  };
-  useEffect(() => {
-    HandleGetAuthUrl();
-  }, []);
 
   return (
     <Router>

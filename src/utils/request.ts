@@ -6,7 +6,8 @@ const service = axios.create({
     // @ts-ignore
     process.env.NODE_ENV === 'development'
       ? 'https://sandbox7.feedly.com/v3'
-      : 'https://cloud.feedly.com/v3',
+      : 'https://sandbox7.feedly.com/v3',
+  // : 'https://cloud.feedly.com/v3',
   timeout: 99999,
 });
 let acitveAxios = 0;
@@ -34,35 +35,6 @@ const closeLoading = () => {
     message.destroy('loading');
   }
 };
-const getMethodUrl = (methodName: string, parameters: any) => {
-  if (methodName === undefined) {
-    return '';
-  }
-  let methodUrl = methodName;
-
-  let queryString = '?';
-  for (let parameterName in parameters) {
-    queryString += parameterName + '=' + parameters[parameterName] + '&';
-  }
-
-  let browserPrefix;
-  // @if BROWSER='chrome'
-  browserPrefix = 'c';
-  // @endif
-
-  // @if BROWSER='opera'
-  browserPrefix = 'o';
-  // @endif
-
-  // @if BROWSER='firefox'
-  browserPrefix = 'f';
-  // @endif
-
-  queryString += 'av=' + browserPrefix + 1;
-
-  methodUrl += queryString;
-  window.open(methodUrl);
-};
 // http request 拦截器
 service.interceptors.request.use(
   (config) => {
@@ -71,12 +43,23 @@ service.interceptors.request.use(
       showLoading();
     }
     if (config.url === '/auth/auth') {
-      getMethodUrl(config.baseURL + config.url, config.params);
       return false;
+    }
+    let token = null;
+    // @ts-ignore
+    if (process.env.NODE_ENV === 'development') {
+      // 浏览器插件环境
+      chrome.storage.sync.get(['accessToken'], (result) => {
+        token = result.accessToken;
+      });
+    } else {
+      // 本地调试环境，每次手动获取后调试此处
+      token =
+        'A5byBOk2KdJvW8i00BngMRZsBQibBoTwMJN-8EQlAFz9pwNkv2JztUR12VEd1pYFoKCVKApsRKsHwKdYpHrJ50KlKJA2OQqj4aMoMjmQIvr88bmNNhC8OGCgOTqc6HaxanG3buzaxxr6_nCS_7s6MLdvPkLPoSaeeI_DZvqU_JDbpExByO8FJLlCqmQ5pfMcsX2rwuX-udgoVtecg7JgblbH8GN5nC21sVjzCt-G6V6sg5cAzDMG9PiU6LETNE1zkn6SRrPT:sandbox';
     }
     config.headers = {
       'Content-Type': 'application/json; charset=utf-8',
-      Authorization: 'OAuth ' + 'token',
+      Authorization: 'OAuth ' + token,
       ...config.headers,
     };
 
@@ -110,7 +93,7 @@ service.interceptors.response.use(
   },
   (error) => {
     closeLoading();
-    switch (error.response.status) {
+    switch (error?.response?.status) {
       case 500:
         message.error('服务器错误');
         break;
