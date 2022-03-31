@@ -1,4 +1,4 @@
-import { Button, Col, Layout, Menu, Row, Tooltip } from "antd";
+import { Button, Col, Layout, Menu, message, Row, Tooltip } from "antd";
 import { NavLink } from "react-router-dom";
 import {
   HistoryOutlined,
@@ -17,6 +17,9 @@ interface LayoutProps {
 
 export default (props: LayoutProps) => {
   const { children } = props;
+  const reload = ()=>{
+    message.success('reload success');
+  }
   return (
     <Layout className={styles.mainLayout}>
       <Header className={styles.header}>
@@ -26,7 +29,7 @@ export default (props: LayoutProps) => {
           <Col span={8}>
             <div className={styles.header_op}>
               <Tooltip title="refresh">
-                <Button type="link" icon={<SyncOutlined spin />} />
+                <Button type="link" icon={<SyncOutlined spin />} onClick={reload}/>
               </Tooltip>
               <Button type="link" ghost icon={<SmileOutlined rotate={180} />} />
             </div>
