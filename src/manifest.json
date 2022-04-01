@@ -17,7 +17,10 @@
     ],
     "service_worker": "background.js"
   },
-  "permissions": ["storage", "tabs"],
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
   "content_scripts": [
     {
       "matches": [

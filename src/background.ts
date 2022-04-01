@@ -3,7 +3,7 @@ const getMethodUrl = (methodName: string, parameters: any) => {
   if (methodName === undefined) {
     return '';
   }
-  const proxyPath = 'https://sandbox7.feedly.com/v3';
+  const proxyPath = 'https://sandbox7.feedly.com';
   let methodUrl = proxyPath + methodName;
 
   let queryString = '?';
@@ -24,7 +24,7 @@ const getMethodUrl = (methodName: string, parameters: any) => {
   browserPrefix = 'f';
   // @endif
 
-  queryString += 'av=' + browserPrefix + 1;
+  queryString += 'av=' + browserPrefix + 3;
 
   methodUrl += queryString;
 
@@ -38,7 +38,7 @@ const getMethodUrl = (methodName: string, parameters: any) => {
       const tempCode = newUrl.searchParams.get('code');
       console.log(tempCode);
       if (tempCode) {
-        const res = await fetch(proxyPath + '/auth/token', {
+        const res = await fetch(proxyPath + '/v3/auth/token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json; charset=utf-8',
@@ -68,22 +68,21 @@ const getMethodUrl = (methodName: string, parameters: any) => {
   });
 };
 chrome.runtime.onInstalled.addListener(() => {
-  console.log(3333333);
   // TODO 未登录或者请求401需要重新获取token
   if (chrome.storage) {
-    let token = null;
     chrome.storage.sync.get(['accessToken'], (result) => {
-      token = result.accessToken;
+      console.log(result.accessToken);
+      if (!result.accessToken) {
+        getMethodUrl('/auth/auth', {
+          response_type: 'code',
+          client_id: 'sandbox',
+          client_secret: '7x7xWjaq0u6Jguw4weEeCM9tyVsLwTPc',
+          redirect_uri: 'http://localhost:8080',
+          scope: 'https://cloud.feedly.com/subscriptions',
+          state: new Date().getTime(),
+        });
+      }
     });
-    if (!token) {
-      getMethodUrl('/auth/auth', {
-        response_type: 'code',
-        client_id: 'sandbox',
-        client_secret: '7x7xWjaq0u6Jguw4weEeCM9tyVsLwTPc',
-        redirect_uri: 'http://localhost:8080',
-        scope: 'https://cloud.feedly.com/subscriptions',
-        state: new Date().getTime(),
-      });
-    }
+    // chrome.action.setBadgeText({ text: "999" });
   }
 });

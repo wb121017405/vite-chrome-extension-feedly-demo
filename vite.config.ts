@@ -13,7 +13,14 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 8080
+    cors: true,
+    port: 8080,
+    proxy: {
+      '/v3': {
+        target: 'https://sandbox7.feedly.com',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     styleImport({

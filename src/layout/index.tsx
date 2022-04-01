@@ -8,6 +8,7 @@ import {
   SmileOutlined,
 } from '@ant-design/icons';
 import styles from './index.module.less';
+import { getMarkersCounts } from '@/api';
 
 const { Header, Footer, Sider, Content } = Layout;
 
@@ -20,11 +21,32 @@ export default (props: LayoutProps) => {
   const reload = () => {
     message.success('reload success');
   };
+  const HandleGetMarkersCounts = async () => {
+    const res = await getMarkersCounts();
+    console.log(res);
+    if (res.status === 200) {
+      let unreadCount = 0;
+      res.data?.unreadcounts?.map((item: any) => {
+        unreadCount += item.count;
+      });
+      if (unreadCount >= 9999) {
+        unreadCount = 9999;
+      }
+      console.log(unreadCount);
+      chrome.action.setBadgeText({ text: String(unreadCount) });
+      chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+    }
+  };
   const testBtn = () => {
-    chrome.storage.sync.get(['key'], function (result) {
-      console.log('Value currently is ' + result.key);
-      message.info(result.key);
-    });
+    try {
+      chrome.storage.sync.get(['accessToken'], function (result) {
+        console.log('Value currently is ' + result.accessToken);
+        message.info(result.accessToken);
+      });
+    } catch (error) {
+      console.log(error);
+    }
+    HandleGetMarkersCounts();
   };
   return (
     <Layout className={styles.mainLayout}>

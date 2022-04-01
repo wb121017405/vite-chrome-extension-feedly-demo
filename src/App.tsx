@@ -6,6 +6,8 @@ import Dashboard from '@/views/Dashboard';
 import HistoryList from '@/views/HistoryList';
 import { ConfigProvider } from 'antd';
 import 'antd/dist/antd.variable.min.css';
+import { useEffect } from 'react';
+import { getMarkersCounts } from '@/api';
 
 ConfigProvider.config({
   theme: {
@@ -13,6 +15,29 @@ ConfigProvider.config({
   },
 });
 const App: React.FC = () => {
+  // 获取未读数量并标记
+  const HandleGetMarkersCounts = async () => {
+    const res = await getMarkersCounts();
+    console.log(res);
+    if (res.status === 200) {
+      let unreadCount = 0;
+      res.data?.unreadcounts?.map((item: any) => {
+        unreadCount += item.count;
+      });
+      if (unreadCount >= 9999) {
+        unreadCount = 9999;
+      }
+      console.log(unreadCount);
+      chrome.action.setBadgeText({ text: String(unreadCount) });
+      chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+      // chrome.storage.local.set({ unreadCounts: res.data?.unreadcounts }, () => {
+      //   console.log('set unreadCount success');
+      // });
+    }
+  };
+  useEffect(() => {
+    HandleGetMarkersCounts();
+  }, []);
 
   return (
     <Router>

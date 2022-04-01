@@ -1,0 +1,765 @@
+{
+  "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/global.all",
+  "updated": 1648803830341,
+  "continuation": "17fe44dbe5c:15ca:855079c2",
+  "items": [
+    {
+      "fingerprint": "62484201",
+      "id": "aQIy0F4mDui4J8tUMt+kYqktBIe7cOTzGXOMF39QueA=_17fe45dda45:16cc:855079c2",
+      "originId": "a7a743c24b42297d311f74478470987f",
+      "origin": {
+        "title": "开发者头条",
+        "streamId": "feed/http://feedmaker.kindle4rss.com/feeds/toutiao.io.xml",
+        "htmlUrl": "http://toutiao.io/"
+      },
+      "title": "彻底搞懂垃圾回收机制底层原理",
+      "crawled": 1648803830341,
+      "content": {
+        "content": "<div><div><section data-website=\"https://www.mdnice.com\" data-tool=\"mdnice编辑器\"><p data-tool=\"mdnice编辑器\">当一个网页运行时，浏览器会给网页分配一段连续的内存空间以供网页使用。</p><p data-tool=\"mdnice编辑器\">并且通过使用方式的不同，内存空间会被分为栈内存与堆内存。栈内存只用于管理函数的执行顺序，堆内存用于存储其他所有对象。</p><p data-tool=\"mdnice编辑器\">我们还知道，程序的运行过程中，会使用内存。而内存空间是有限的，因此，内存空间的重复利用就变得非常重要。垃圾回收的概念也因此而生。</p><p data-tool=\"mdnice编辑器\">在学习垃圾回收机制之前，我们明确几个概念。</p><p data-tool=\"mdnice编辑器\"><strong>引用</strong>：内存的起始地址</p><p data-tool=\"mdnice编辑器\"><strong>弱引用</strong>：WeakMap WeakSet</p><p data-tool=\"mdnice编辑器\"><strong>垃圾</strong>：无任何引用的对象</p><p data-tool=\"mdnice编辑器\"><strong>回收</strong>：清空被垃圾占用的内存</p><p data-tool=\"mdnice编辑器\"><strong>垃圾回收区域</strong>：堆内存</p><p data-tool=\"mdnice编辑器\"><strong>发生时间</strong>：程序空闲时间时</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>第一个问题：如何识别垃圾</span><span></span></h3><p data-tool=\"mdnice编辑器\">ECMAScript 规范中并没有明确指出 JS 引擎必须使用哪种算法来识别垃圾，因此我们这里介绍几种常用的方式。</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>引用计数法</span><span></span></h3><p data-tool=\"mdnice编辑器\">堆中的每个对象都有一个引用计数器。当一个对象被创造初始化赋值之后，该变量计数就设置为1</p><pre data-tool=\"mdnice编辑器\"><code><span>var</span> a = <span>new</span> <span>Object</span>() <span>// 计数变量 = 1</span><br></code></pre><p data-tool=\"mdnice编辑器\">每当有一个地方引用它时，计数器的值就加1</p><pre data-tool=\"mdnice编辑器\"><code><span>var</span> a = <span>new</span> <span>Object</span>() <span>// 计数变量 = 1</span><br><span>var</span> b = a   <span>// 计数变量 + 1 = 2</span><br></code></pre><p data-tool=\"mdnice编辑器\">当引用失效时，计数器的值就减1</p><pre data-tool=\"mdnice编辑器\"><code><span>var</span> a = <span>new</span> <span>Object</span>() <span>// 计数变量 = 1</span><br><span>var</span> b = a   <span>// 计数变量 + 1 = 2</span><br><span>var</span> c = a   <span>// 计数变量 + 1 = 3</span><br><br>a = <span>null</span>    <span>// 引用失效，计数变量 -1 = 2</span><br>b = {}      <span>// 引用失效，计数变量 -1 = 1</span><br></code></pre><p data-tool=\"mdnice编辑器\">当该对象的计数值为0时，就表示失去了所有的引用，该对象就成为了垃圾。</p><pre data-tool=\"mdnice编辑器\"><code><span>var</span> a = <span>new</span> <span>Object</span>() <span>// 计数变量 = 1</span><br><span>var</span> b = a   <span>// 计数变量 + 1 = 2</span><br><span>var</span> c = a   <span>// 计数变量 + 1 = 3</span><br><br>a = <span>null</span>    <span>// 引用失效，计数变量 -1 = 2</span><br>b = {}      <span>// 引用失效，计数变量 -1 = 1</span><br>c = <span>null</span>    <span>// 引用失效，计数变量 -1 = 0</span><br></code></pre><p data-tool=\"mdnice编辑器\">知识体系关联：这样的管理方式，类似于数组的 length 字段。</p><p data-tool=\"mdnice编辑器\">优点：引用计数收集器执行简单，实现简单，判定效率高，无延迟，对程序不被长时间打断的<strong>实时</strong>环境比较有利。</p><p data-tool=\"mdnice编辑器\">缺点：赋值时需要更新计数器，增加了微量时间开销，影响不大。最严重的问题是引用计数器无法处理循环引用的问题。</p><pre data-tool=\"mdnice编辑器\"><code><span>var</span> p = <br>{ <br>  <span>n</span>: <span>1</span>, <br>  <span>next</span>: {<br>   <span>n</span>: <span>2</span>,<br>   <span>next</span>: p<br>  }<br>}<br><br>p = <span>null</span><br><br></code></pre><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kf5Evtab39MKlGJGg8ChtqsdfWD2R0sFpFL2UxQhmwcVVPaQw4Sskm2A/640?wx_fmt=png\" data-ratio=\"0.5963687150837989\" data-type=\"png\" data-w=\"1432\"></figure><p data-tool=\"mdnice编辑器\">对象不可访问，计数也不为0，无法被回收，导致内存泄漏。</p><p data-tool=\"mdnice编辑器\">引用计数法虽然有这样致命的缺陷，但是由于其性能的优越性，依然有开发语言采用该算法，例如早期的 Java，以及现在的 Python。并通过手动解除、或者在循环引用的环节使用弱引用的方式。</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>根搜索算法 <code>Tracing Collector</code></span><span></span></h3><p data-tool=\"mdnice编辑器\">首先了解一个概念：GC Roots Set（根集），他是可访问的引用集合。Roots Set 中的引用变量可以用于访问对象的属性以及调用对象的方法。</p><p data-tool=\"mdnice编辑器\">这种算法的基本思路就是：先通过一系列 <code>GC Roots</code> 的对象作为起点，遍历寻找对应的引用节点。找到这些节点之后，继续向下递归寻找节点。</p><p data-tool=\"mdnice编辑器\">搜索所走过的路径称为引用链，当一个对象到 GC Roots 没有任何引用链相连时，就证明该对象是不可用的。</p><p data-tool=\"mdnice编辑器\">如果不考虑循环引用，Roots Set 会表现出一棵棵树状结构，如果考虑循环引用，则会呈现出图结构。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfPGuicgIOvGQYaRS3KhxaJauPWia5vmicjooIB6Pn51tl9gyddyREj52pA/640?wx_fmt=png\" data-ratio=\"0.35517241379310344\" data-type=\"png\" data-w=\"580\"></figure><p data-tool=\"mdnice编辑器\">哪些对象可以作为根节点：</p><ol data-tool=\"mdnice编辑器\"><li><section><p>所有正在运行的栈上的引用变量</p></section></li><li><section><p>所有的全局对象全局变量</p></section></li><li><section><p>所有的内置对象</p></section></li></ol><p data-tool=\"mdnice编辑器\">在内存中对整个堆进行遍历，先从 GC 根对象开始，然后找到根对象引用的其它对象，能访问到的所有对象都标记为存活。</p><p data-tool=\"mdnice编辑器\">关于标记阶段有几个关键点是值得注意的：</p><ol data-tool=\"mdnice编辑器\"><li><section><p>开始进行标记前，需要先暂停应用线程，否则如果对象图一直在变化的话是无法真正去遍历它的。这就是后面我们会提到的 <code>stop-the-world</code></p></section></li><li><section><p>暂停时间的长短并不取决于堆内对象的多少也不是堆的大小，而是存活对象的多少。因此，调高堆的大小并不会影响到标记阶段的时间长短。</p></section></li><li><section><p>在 Blink 引擎的垃圾回收器 Oilpan 中，则某个对象在被回收之前，可能会执行一个回收之前需要做什么的生命周期函数 <code>finalize</code>。</p></section></li></ol><p data-tool=\"mdnice编辑器\">如果该对象被判定为有必要执行 <code>finalize()</code> 方法，那么这个对象将会被放置在一个名为 <code>finalization-queue</code> 队列中，并在稍后由一条低优先级的 <code>Finalizer</code> 线程去执行这些任务。<code>finalize</code> 方法是对象逃脱死亡命运的最后一次机会，稍后 GC 将对 <code>finalization-queue</code> 中的对象进行第二次小规模的标记，如果要在 <code>finalize()</code> 中成功拯救自己，只要让该对象重新引用链上的任何一个对象建立关联即可。而如果对象这时还没有关联到任何链上的引用，那它就会被回收掉。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kf1b0lq0pDlfXvtSiaicZmHBZiagg0u744rurfwBHFMhsCicbsdQXexUNK0A/640?wx_fmt=png\" data-ratio=\"0.37344913151364767\" data-type=\"png\" data-w=\"806\"></figure><p data-tool=\"mdnice编辑器\">而在 V8 引擎的实现中，由于我们无法访问垃圾回收器，因此就没有提供这样的生命周期函数让 JavaScript 开发者有所作为。</p><ol start=\"4\" data-tool=\"mdnice编辑器\"><li><section>GC 判断对象是否可达看的是强引用，而非弱引用</section></li></ol><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>V8 的垃圾回收器</span><span></span></h3><p data-tool=\"mdnice编辑器\">V8 的垃圾回收器名为 <code>Orinoco</code>。上面我们也提到，垃圾回收器无论在进行标记或者回收行为时，我们都会暂停 JS 主线程的执行。因此早期的 <code>Orinoco</code> 采用了这种 <code>stop-the-world</code> 的方式。</p><p data-tool=\"mdnice编辑器\">任何垃圾收集器都有一些必须定期执行的基本任务：</p><ol data-tool=\"mdnice编辑器\"><li><section>识别活/死对象</section></li><li><section>回收/重用死对象占用的内存</section></li><li><section>压缩/碎片整理内存（可选）</section></li></ol><p data-tool=\"mdnice编辑器\">这些任务可以按顺序执行，也可以任意交错执行。<code>stop-the-world</code> 的方式暂停 JavaScript 执行并在主线程上按顺序执行这些任务。当然这种方式的副作用就是会导致主线程出现卡顿和延迟，用户感知明显。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfRrMS2yxWA0icgNeEpoGX4lAOyJX439oh92fV7p54nnOYS5rZhzxBGzQ/640?wx_fmt=png\" data-ratio=\"0.309114927344782\" data-type=\"png\" data-w=\"757\"></figure><p data-tool=\"mdnice编辑器\">那么这种方式会做什么事呢？</p><p data-tool=\"mdnice编辑器\">首先，标记存活对象。</p><p data-tool=\"mdnice编辑器\">GC 通过根搜索算法验证活跃对象的可达性，在这个过程中，GC 可以收集任何无法访问的对象。</p><p data-tool=\"mdnice编辑器\">收集到了所有无法访问的对象之后，就会清空对应的内存空间。与此同时，会在一个 <code>free-list</code> 的列表记录这些清理出来的内存位置与大小，当有新的对象需要分配内存空间时，就会在 <code>free-list</code> 中查找。</p><p data-tool=\"mdnice编辑器\">如果不做任何特殊的处理，新的对象所需要的内存空间不可能完整的跟 <code>free-list</code> 的空闲内存大小一致，因此最后就会存在许多难以利用的内存缝隙。为了解决这个问题，我们还需要在回收过程中，对内存进行碎片整理。以确保我们总能够得到连续的空闲内存分配给新的对象。</p><p data-tool=\"mdnice编辑器\">在过去几年中，<code>Orinoco</code> 有了很大的转变。我们接着往下继续了解。</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>V8 中的堆内存区域划分</span><span></span></h3><p data-tool=\"mdnice编辑器\">V8 主要将堆内存划分为两个区域，新生代 <code>Young Generation</code> 与 老生代 <code>Old Generation</code>。从概念上来说，新生代主要用于存储生命短暂的对象，例如执行上下文，老生代用于存储生命漫长的对象例如函数声明。</p><blockquote data-tool=\"mdnice编辑器\"><p>新生代又被进一步划分为两个区域，如下图，在后面的分析中，我们用 From、To 来称呼他们</p></blockquote><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfFE74iaicRdeNwAPEdvO1ib9qdBSrzx7zxnzeYMfe6ft0Ve7f0FllnOzoA/640?wx_fmt=png\" data-ratio=\"0.34084880636604775\" data-type=\"png\" data-w=\"754\"></figure><p data-tool=\"mdnice编辑器\">在 GC 中有一个重要的术语：<code>The Generational Hypothesis</code>。也就是说，我们大胆的预测大多数对象都会在新生代中死亡，实际上也是这样，这是 <code>Orinoco</code> 具体实现的大前提。V8 的内存区域分布则利用了这一假设，只有少数对象能在新生代中存活下来，然后移动到老生代中。所以大多数对象都是隐式垃圾，用完即走。</p><p data-tool=\"mdnice编辑器\">所以，GC 复制算法得以在 V8 中被使用，因为被复制的对象一定是少数。后面我们分析复制算法。</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>Major GC (Full Mark-Compact)</span><span></span></h3><p data-tool=\"mdnice编辑器\">在 <code>Orinoco</code> 中，存在两个不同的 GC。Major GC：用于回收老生代的垃圾， 与 Minor GC：用于回收新生代的垃圾。</p><p data-tool=\"mdnice编辑器\">Major GC 管理整个堆内存，主要是对老生代区域的内存进行回收。Major GC 采用了 <code>Mark-compact</code> 算法「标记-整理」来管理内存。</p><p data-tool=\"mdnice编辑器\">他是为了解决 <code>Mark-Sweep</code> 算法所带来的内存缝隙而提出来的优化方案。标记方式依然通过根搜索算法进行标记，<code>compact</code> 整理算法我们用图例来讲解一下。</p><p data-tool=\"mdnice编辑器\">在这之前，我们要明确 <code>compact</code> 要做的两件事情</p><ol data-tool=\"mdnice编辑器\"><li><section>把存活的对象移动到该去的位置</section></li><li><section>修改引用，让他们指向新的地址</section></li></ol><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfZ71Pv6HwQ2KAT49uS8LsszbA69v4fLreBlq5VtjHEKWrk5yGM7KK0w/640?wx_fmt=png\" data-ratio=\"1.0018814675446848\" data-type=\"png\" data-w=\"1063\"></figure><p data-tool=\"mdnice编辑器\">通过这样的方式之后，我们就得到一个整理之后的新布局。不过这样的方式也存在一些问题，因为要对堆内存遍历很多遍，因此内存越大，性能消耗就越大。不过得益于老生代中的内存对象比较少，并且变动比较小，因此 V8 依然选中该方法来管理老生代对象。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfR4jbuYX3hNzbZMt85BMBAKg35CQFMKjUE1Xj6cwE6mAPXicnnPERLicg/640?wx_fmt=png\" data-ratio=\"0.31125827814569534\" data-type=\"png\" data-w=\"755\"></figure><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>Minor GC (Scavenger)</span><span></span></h3><p data-tool=\"mdnice编辑器\">Minor GC 专门用于管理新生代内存。并且使用了一种名为 <code>cheney</code> 的 GC 复制算法。一种使用空间换取时间的方法。因此，了解新生代内存空间到底是如何管理的，实际上就需要对空间复制算法有深刻的理解。</p><p data-tool=\"mdnice编辑器\">首先我们要明确大的前提，随着程序的运行，新生代会产生大量的内存占用，如果我们继续采用简单的遍历手段来清理，时间效率就会大打折扣。那么空间复制算法是如何解决这个问题的呢？</p><p data-tool=\"mdnice编辑器\">空间复制算法将新生代空间均等的一分为二。From-space 与 To-space。新的对象产生之后，会首先占用 <code>From-space</code>，<code>From-space</code> 被占满「或者达到某个阈值」之后，就会开始执行清理任务。并将剩余的活动对象复制到 <code>To-space</code>。执行过程如下：</p><p data-tool=\"mdnice编辑器\">首先我们模拟一个内存布局，情况如下：</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfibVuerP9kk0bBicgWO0Je6sCUGROwKJjOgCl0LOjXU4vLootXRNUpDLw/640?wx_fmt=png\" data-ratio=\"0.4753623188405797\" data-type=\"png\" data-w=\"2070\"></figure><p data-tool=\"mdnice编辑器\">在 From 空间中，共有 A、B、C、D、E、F、G 7个对象。我们用箭头标明了各个对象之间的引用关系。<code>$free</code> 指针用于指向当前对应空间的可分配内存的起始地址。</p><p data-tool=\"mdnice编辑器\">当 GC 开始执行，根据根搜索算法，我们先从 Root 中的引用开始查询，首先找到了活动对象 B。然后将 B 复制到 <code>To-space</code>。并在 <code>From-space</code> 中将 B 对象标记为已复制「图中使用置灰来表示」。<code>$free</code> 指针移动到新的起始位置。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfzqUia1jAgFePLOkBjU2jvntfIfIwnuImpEqRGrGLOxUjDP9Sx5EymQw/640?wx_fmt=png\" data-ratio=\"0.4831243972999036\" data-type=\"png\" data-w=\"2074\"></figure><p data-tool=\"mdnice编辑器\">然后再接着查询 B 的引用，找到了 B 的子对象 A，于是就将 对象 A 复制到 <code>To-space</code> 。这是一个递归过程。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfOsgKqRb7sR6QQZXhyAbJ9bwFN5o0oCs4PbAAsd7aSjhicwSj4eiaibtaA/640?wx_fmt=png\" data-ratio=\"0.47784200385356457\" data-type=\"png\" data-w=\"2076\"></figure><p data-tool=\"mdnice编辑器\">此时查询 A，发现 A 没有往下的引用了，所以结束。回过头继续执行根节点别的引用。此时我们模拟的案例中，还有这样一个路径 <code>Root -> B -> E</code>，按照上面一样的方式复制即可。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfJJZTfGv94YCts4ZsKVwVicx5QPxvjuE0EMnfd425Vf0OOibePnQJnwbw/640?wx_fmt=png\" data-ratio=\"0.4884393063583815\" data-type=\"png\" data-w=\"2076\"></figure><p data-tool=\"mdnice编辑器\">此时，活跃对象已经被全部复制到了 <code>To-space</code>。接下来我们只需要将 <code>From-space</code> 全部清空，然后将两个空间互换。这样我们就能够得到一个全新的 <code>To-space</code>。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfyGibHZZo57sSMaSskjgAGu5Av93JwHPBnAX0KIC18uBGVSPEkTuF3kw/640?wx_fmt=png\" data-ratio=\"0.4995169082125604\" data-type=\"png\" data-w=\"2070\"></figure><blockquote data-tool=\"mdnice编辑器\"><p>此时我们需要考虑一个问题，为什么要把已经复制过的对象还保留在 <code>From-space</code> 中。关键提示：一个对象可以被多个对象同时引用</p></blockquote><p data-tool=\"mdnice编辑器\">我们会发现，对象 C、D、F 在该算法中压根就没管过他们，因此我们结合根节点使用深度优先搜索，能够在非常短的时间之内完成整个 GC，和一般的 <code>Mark-sweep</code> 「标记-清除」相比，它在时间上的高效要大大超出。并且当堆内存中的对象越多，GC 复制算法的优势就越大，当对象不断增加时，<code>Mark-sweep</code> 所花费的时间会不断增加，而 GC 复制算法则不会。</p><p data-tool=\"mdnice编辑器\">领会这个优势的时候，我们不要忘记刚才所提到的假设前提：大多数对象都是死亡对象。</p><p data-tool=\"mdnice编辑器\">除此之外，我们还发现在 GC 复制算法中，我们并不需要维护一个 <code>free-list</code> 来记录分配空间，只需要一个 <code>$free</code> 指针，我们就能够知道哪些空间是可以分配的，这也极大的简化了算法的复杂程度。</p><p data-tool=\"mdnice编辑器\">当然，还有最重要的一点，GC 复制算法不会产生内存碎片，我们不需要花费额外的精力去考虑如何整理它。</p><p data-tool=\"mdnice编辑器\">除此之外，许多 CPU 都会借助缓存机制，通过压缩把有引用关系的对象安排在堆中较近的位置，以达到高速访问对象的目的。GC 复制算法则在某种程度上迎合了 CPU 的这个优化策略，有引用关系的对象被安排在相邻的位置。</p><p data-tool=\"mdnice编辑器\">当然 GC 复制算法的缺点也很明显，对于内存的使用效率偏低，新生代中只有一半的内存空间可供分配。当然，对于 V8 而言，使用空间去换取高效的时间，这是非常愿意接受的事情。</p><p data-tool=\"mdnice编辑器\">在深度优先搜索的过程中，我们需要递归的去查询和复制子对象。由此带来的额外负担不可忽视，对于栈内存的消耗也具有很大的风险「栈溢出」，因此，相比递归算法，迭代算法更值得我们采纳。</p><p data-tool=\"mdnice编辑器\"><code>Oninoco</code> 中采用的 <code>Cheney</code> 算法，则是使用的迭代来解决该问题。</p><h4 data-tool=\"mdnice编辑器\"><span></span>Cheney GC 复制算法<span></span></h4><p data-tool=\"mdnice编辑器\"><code>Cheney</code> 算法引入了新的指针 <code>$scan</code>。该指针用于标记 <code>To-space</code> 中，还没有被向下搜索过子对象的起始位置。此时 <code>To-sapce</code> 我们应当将其看做是一个对象。往 <code>To-space</code> 中复制对象的行为为入队，<code>$scan</code> 按照队列中的对象依次搜索的行为为出队。</p><p data-tool=\"mdnice编辑器\">此时，复制与搜索行为就是队列的入队与出队。我们依然从根节点开始搜索。模拟的新生代初始情况如下图。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfnlO9LUdibyRN6PtVHPa9xdbxKuFeQqKTdURPu2bLQD65LhibeFiayWv0Q/640?wx_fmt=png\" data-ratio=\"0.5033492822966508\" data-type=\"png\" data-w=\"2090\"></figure><p data-tool=\"mdnice编辑器\">从根节点搜索依次发现两个对象，B、G。与普通 GC 复制算法不同的是，此时我们会直接将 B 、G 依次复制到 <code>To-space</code> 中。<code>$scan</code> 指针暂时保持不变，<code>$free</code> 指针向右移动。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfY4ibfvu7zD0Sqkvqe3uudW1LYfgCX1ic45B6vmXJCxsK2mWWzxibkNpkw/640?wx_fmt=png\" data-ratio=\"0.5119846596356663\" data-type=\"png\" data-w=\"2086\"></figure><p data-tool=\"mdnice编辑器\">Root 节点中没有别的引用了，此时队列中的对象成为了新的 Root 节点，我们就开始从队列的头部开始搜索，<code>$scan</code> 指针开始从队列头部依次向右移动。搜索当前队列中的第一个对象 B，发现新的引用 A，于是 A 复制进入队列。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kficYzzIzSc1pA8ONt7C2MqpyyYCCibwgg0fcmB5PpM3ibSWebkw1iavcl8A/640?wx_fmt=png\" data-ratio=\"0.5191570881226054\" data-type=\"png\" data-w=\"2088\"></figure><p data-tool=\"mdnice编辑器\">此后，<code>$scan</code> 接着往右移动，依次出队，发现新的对象就复制入队，直到<code>$scan</code> 指针与 <code>$free</code> 指针再次重合为止。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kftDOrDKiax2UbiaX5zmNP830KCecIMyh5UJesWqArCwsXYoqGcWT8J2uw/640?wx_fmt=png\" data-ratio=\"0.5142017629774731\" data-type=\"png\" data-w=\"2042\"></figure><p data-tool=\"mdnice编辑器\">OK，剩下的就是清理空间然后互换。</p><blockquote data-tool=\"mdnice编辑器\"><p>知识体系关联：与 Promise 的任务队列方式相似</p></blockquote><p data-tool=\"mdnice编辑器\">我们可以发现，<code>Cheney</code> 算法采用的是广度优先遍历。此时指针 <code>$scan</code> 与 <code>$free</code> 之间的对象成为了一个队列，<code>$scan</code> 左边是已经遍历过的对象，右边是没有遍历的对象。这样把堆用做队列的方式，消除了普通GC算法的递归风险，不用特意为队列留出多余的空间就能够完成遍历，这就是迭代。也是 <code>Cheney</code> 算法的一大优点。</p><p data-tool=\"mdnice编辑器\">当然，付出的代价就是 <code>Cheney</code> 算法不再考虑临近的对象放在一起了。访问速度上与普通的GC算法相比，可能会稍微慢一些。</p><blockquote data-tool=\"mdnice编辑器\"><p>知识体系关联：优先级队列的算法，在 React Fiber 架构中也有运用到。我们在学习 React 底层原理的时候也会遇到。</p></blockquote><p data-tool=\"mdnice编辑器\">当然，如果仅仅只是这样的话，新生代的内存空间很快就会消耗殆尽。因此，新生代中的对象如何能在第二次 GC 中幸存下来，就会被疏散到老生代区域中。</p><blockquote data-tool=\"mdnice编辑器\"><p>在复制过程中，每个复制对象都会留下一个转发地址，用于更新原始指针指向新的位置。</p></blockquote><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kf3KjMFZ5iaRb2RMyn8KvgLEuCdpN93gN8icub679pERbIQrLpgXsic87jA/640?wx_fmt=png\" data-ratio=\"0.3451910408432148\" data-type=\"png\" data-w=\"759\"></figure><p data-tool=\"mdnice编辑器\">不过一定要注意的是，清理过程中，GC 执行了标记、疏散、指针更新等行为，这些都是交替执行的，而不是在特定不同的阶段执行。</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>进一步优化</span><span></span></h3><p data-tool=\"mdnice编辑器\">在了解了新生代和老生代分别的内存管理策略以及对应的算法之后，在特定的场景之下，GC 还需要继续优化。内存清理行为我们可以统一为一个行为，采用 <code>stop-the-world</code> 的方式，暂停 JS 的执行。但这样做的代价就是页面明显卡顿。对于浏览器来说，这是不可接受的事实。</p><p data-tool=\"mdnice编辑器\">因此 <code>Orinoco</code>  还继续做了优化。这里我们需要理解几个词汇。Parallel 并行，Incremental 增量，Concurrent 并发。</p><h4 data-tool=\"mdnice编辑器\"><span></span>Incremental<span></span></h4><p data-tool=\"mdnice编辑器\">2011年，V8 从 <code>stop-the-world</code> 切换到 <code>Incremental</code> 增量标记 + <code>Lazy Sweeping</code>惰性清理的模式。</p><p data-tool=\"mdnice编辑器\">增量执行的意思是主线程间歇性的执行一部分工作。我们会将 GC 任务拆分成多个小任务，然后在主线程的间隙中执行这些小任务。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfuZnnMsnsOahqu57c2Os2xibgprVRStI8rZjP7FZHaLibSMzeaHLZ0XeQ/640?wx_fmt=png\" data-ratio=\"0.26858877086494687\" data-type=\"png\" data-w=\"1318\"></figure><p data-tool=\"mdnice编辑器\">当增量标记完成之后，假如当前的可用内存足以让我们快速的执行代码，其实我们没必要立即清理内存。可以将清理的过程延迟一下，让 JavaScript 逻辑代码先执行，也无需一次性清理完所有的垃圾，而是按需逐步清理，直到所有的页面都清理完毕。</p><p data-tool=\"mdnice编辑器\">结合浏览器自带的任务调度的空闲时间<code>Idle</code>，增量标记与惰性清理的出现，使主线程的最大停顿时间减少了 80%。页面更加流畅了。</p><p data-tool=\"mdnice编辑器\">但是这种实现方式比较困难，因为 JavaScript 会继续执行，可能会在增量工作中改变堆的状态，也就意味着会导致之前的任务无效，为了解决这个问题，V8 引入了写屏障技术<code>Write-barrier</code>来记录这些引用关系的变化，这也为整个标记过程带来了额外的执行成本。并且从图中可以看出，GC 的整体时间并没有减少，只是分散开了而已。</p><h4 data-tool=\"mdnice编辑器\"><span></span>Parallel 与 Concurrent<span></span></h4><p data-tool=\"mdnice编辑器\">Parallel 表示并行。指的是主线程和辅助线程同时执行大致数量相等的任务。该方案依然是采用了 <code>stop-the-world</code> 的方式，但是将清理任务分别交给多个线程来执行，可以极大的减少暂停时间。如下图，从实现方式上来说，这是实现起来最简单的方案。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kfvkapggLiaaX9oEEajTrviaDgHYNqeeDh9mKQC3HyrYwUCHY1TZHSkXZQ/640?wx_fmt=png\" data-ratio=\"0.2853297442799462\" data-type=\"png\" data-w=\"1486\"></figure><p data-tool=\"mdnice编辑器\">Concurrent 表示并发。也就是说，在我们不暂停JavaScript 代码执行的同时，辅助线程在后台执行 GC 工作。这是三种技术中实现起来难度最高的。因为 JavaScript 会随时更改堆中的情况，最重要的是，如果辅助线程与 JavaScript 主线程同时读取或者修改同一个对象，就更难处理。</p><figure data-tool=\"mdnice编辑器\"><img data-src=\"https://mmbiz.qpic.cn/mmbiz_png/Kn1wMOibzLcH7Nfia0whpHT1S1QVopC9kf0kJGnIPe01uy8EaWOTIcfewq3UhhzxytO58XySe30bia2wFpwf4mOAA/640?wx_fmt=png\" data-ratio=\"0.28296296296296297\" data-type=\"png\" data-w=\"1350\"></figure><p data-tool=\"mdnice编辑器\">2018年，V8 同时引入了并行与并发，让垃圾回收的时间进一步大幅度缩短。</p><p data-tool=\"mdnice编辑器\">在新生代中，使用并行机制。在将活动对象从 <code>From-space</code> 复制到 <code>to-space</code> 时，启用多个辅助线程，并行的进行整理。由于多个线程可能会竞争同一个对象，因此第一个线程对该对象操作之后，都必须维护这个对象的转发地址，以便于其他线程能够快速判断该对象是否已经被复制。</p><p data-tool=\"mdnice编辑器\">在老生代中，如果堆中的内存大小超过某个阈值，会启用并发（Concurrent）标记任务。每个辅助线程都会去追踪每个标记到的对象的指针以及对这个对象的引用，而在JavaScript代码执行时候，并发标记也在后台的辅助进程中进行，当堆中的某个对象指针被JavaScript代码修改的时候，写入屏障（write barriers）技术会在辅助线程在进行并发标记的时候进行追踪。</p><p data-tool=\"mdnice编辑器\">当并发标记完成或者动态分配的内存到达极限的时候，主线程会执行最终的快速标记步骤，这个时候主线程会挂起，主线程会再一次的扫描根集以确保所有的对象都完成了标记，由于辅助线程已经标记过活动对象，主线程的本次扫描只是进行check操作，确认完成之后，某些辅助线程会进行清理内存操作，某些辅助进程会进行内存整理操作，由于都是并发的，并不会影响主线程JavaScript代码的执行。</p><h3 data-tool=\"mdnice编辑器\"><span></span><span></span><span>结语</span><span></span></h3><p data-tool=\"mdnice编辑器\">V8 中的垃圾收集器自诞生以来已经走过了漫长的道路。向现有 GC 添加并行、增量和并发技术是一项多年的努力，现在已经取得了显著的回报。将大量工作转移到后台任务，极大地改善了暂停时间、延迟和页面加载，使动画、滚动和用户交互更加流畅。并行 Scavenger 将主线程新生代垃圾收集的总时间减少了大约 20%–50%，这具体取决于工作负载。Idle-time GC 可以在 Gmail 空闲时将其 JavaScript 堆内存减少 45%。并发标记和清除已将重型 WebGL 游戏的暂停时间减少了多达 50%。</p><p data-tool=\"mdnice编辑器\">但是性能优化的工作依然没有完成。减少垃圾收集暂停时间对于为用户提供最佳网络体验仍然很重要，V8 团队也正在研究更先进的技术。最重要的是，Blink（Chrome 中的渲染器）还有一个垃圾收集器（称为 Oilpan），V8 团队正在努力改善两个收集器之间的合作，并将一些新技术从 Orinoco 移植到 Oilpan。</p><p data-tool=\"mdnice编辑器\">大多数开发人员在开发 JavaScript 程序时不需要考虑 GC，但是了解一些内部机制可以帮助您考虑内存使用和有用的编程模式。例如，从垃圾回收的角度来看，短生命周期对象的使用成本实际上非常低，而长生命周期对象的维护成本则会偏高。因此，对于闭包/无效函数声明等对象的使用就应该非常严谨。</p><blockquote data-tool=\"mdnice编辑器\"><p>优化手段：1. shaking 技术；2. 减少闭包对象的大小，而非不用闭包</p></blockquote><p data-tool=\"mdnice编辑器\">参考文档：</p><p data-tool=\"mdnice编辑器\"><code>https://v8.dev/blog/high-performance-cpp-gc</code><br><code>https://v8.dev/blog/concurrent-marking</code><br><code>https://v8.dev/blog/trash-talk#incremental</code></p></section></div></div>",
+        "direction": "ltr"
+      },
+      "published": 1648803830341,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://toutiao.io/k/foaja7h"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpeg",
+        "url": "http://cdn3.sbnation.com/entry_photo_images/9192995/Untitled_large.jpg",
+        "width": 630,
+        "height": 420
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/fa72be6a-cdf5-4b35-8d27-2f757d8671e0",
+          "label": "Programming"
+        }
+      ]
+    },
+    {
+      "fingerprint": "e2921ce4",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1687:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844359",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[反馈] 主题页的 twitter:image 标签 url 有误",
+      "updated": 1648803199000,
+      "author": "Pipecraft",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>@<a href=\"https://www.v2ex.com/member/livid\">livid</a></p>\n<p>发现主题页面的 twitter:image 标签 url 有问题, 多了 https:。</p>\n<pre><code>&lt;meta name=&quot;twitter:image&quot; content=&quot;https:https://cdn.v2ex.com/avatar/...&quot; />\n</code></pre>",
+        "direction": "ltr"
+      },
+      "published": 1648803379000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844359#reply1"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "3eb8458c",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1686:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844358",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[程序员] 看纯英文技术文档速度慢。。你们怎么习惯的",
+      "updated": 1648803353000,
+      "author": "polobug",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>水平也就个六级飘过，</p>\n<p>看英文文档，做不到那种瞟一眼理解。还得在脑子里过一遍翻译。。遇到生词就要阻塞个几秒。。。</p>\n<p>你们是怎么习惯的。。</p>",
+        "direction": "ltr"
+      },
+      "published": 1648803247000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844358#reply2"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "e67a270f",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1685:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844357",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[Linux] 目前无界 16 装 Linux 效果怎么样？",
+      "updated": 1648802867000,
+      "author": "0o0O0o0O0o",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>i7-12700H 核显版，120Hz 。</p>\n<p>未来打算用来装 Ubuntu Desktop 22.04 LTS</p>\n<p>主要关注点在 PD 充电（ C 口或者圆口诱骗）、无线、显示、外接显示器，有什么已知的坑吗？</p>\n<p>或者目前有什么比它轻（&lt;1.7kg ）的 i7-12700H 的轻薄本吗？要求双内存插槽，可 PD 供电，可升级硬盘，最好双硬盘接口，最好没有独显。</p>\n<p>感觉这几个月我看到的 12 代酷睿的笔记本都好重啊…</p>",
+        "direction": "ltr"
+      },
+      "published": 1648802927000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844357#reply2"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "471a08c",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1684:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844356",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[程序员] 如果一个由多人维护的开源项目被商业公司收购，后续版本转向闭源，收购费用一般怎么分成？",
+      "updated": 1648802601000,
+      "author": "theklf4",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "全归项目创建者 /主要维护者吗？",
+        "direction": "ltr"
+      },
+      "published": 1648802721000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844356#reply0"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "204f65bd",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1683:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844355",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[问与答] 给朋友发拼多多显卡促销导致 QQ 被封…",
+      "updated": 1648803617000,
+      "author": "Suigintou",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "最近显卡降价跟朋友分享拼多多的促销结果触发了狗腾讯的风控把账号冻结了，目前虽然可以解冻，但需要提交实名信息和人脸认证，过于恶心，想问问过一段时间会自动解冻吗？",
+        "direction": "ltr"
+      },
+      "published": 1648802313000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844355#reply3"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "561e3730",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1682:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844354",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[问与答] 应该怎样度过这一生",
+      "updated": 1648803110000,
+      "author": "caooooooooo",
+      "crawled": 1648803654746,
+      "published": 1648802147000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844354#reply4"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "6c5166f9",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1681:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844353",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[职场话题] 亲戚家孩子这种学历，还有希望冲比较好的厂吗？",
+      "updated": 1648802415000,
+      "author": "my2492",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "2016 年高中毕业的，平时成绩还凑合，二本线到一本线边界上那水平，偏科，数学差英语好。结果高考给考了个三本分，但英语成绩还算挺好的，数学嘛前 160 的卷子 100 都没满<br><br>然后他父母给送去一个 2+2 的中外合作办学学校了，学校世界排名貌似 500 往后了，据他说那 4 年在学校成绩排名差不多年年都是前 10 的水平，读的金融方面的<br><br>后来毕业后靠着学校前 10 的成绩，还有那比较有天赋的英语基础，去了个排名前 50 的学校读个水硕，新媒体专业，他说这两年觉得网红什么的好赚钱，想找个运营工作，所以选了这个专业。读研期间还找了个比较水的实习做了 3 个月。<br><br>然后嘛，这两天他跟家里人吵架了。大概就是去年秋招投了 50 家左右大厂 0 offer ，然后今年春招再战直接 0 面试了，然后家里人让他随便找个厂子干活，或者去银行做柜员，找个保险公司卖保险去。他非常不甘心，说我一个硕士干专科毕业生的事情？我也不知道应该怎么安慰他，刚才跟我们公司部门主管聊了聊这事，他说还是要劝你亲戚家孩子接受现实，现在对双非毕业生，大厂都是让你笔试装装样子，一看这学历就直接挂了。留学并不能逃避他考了一个三本的现实，别人 HR 不傻，再说现在大厂一个岗位就招个位数，这学历能上岸几率和中彩票差不多，别听什么找工作中介机构吹牛面试辅导什么的，没用，这个学历真的差点意思，太难弥补了，而且实习也太水。<br><br>怎么说呢，我觉得有梦想是好事，应不应该告诉他现实呢？大家对他这种情况有没有什么好的建议？",
+        "direction": "ltr"
+      },
+      "published": 1648801873000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844353#reply9"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "8d46236c",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1680:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844352",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[微博] 微博 隐私泄露",
+      "updated": 1648672730000,
+      "author": "fengziyun",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>我擦 微博在我手机上登录 未登录其他客户端\n莫名的头像就被改成黄色赌博网站了 还乱发评论 点赞<br>\n查看微博的登录记录 居然在湖南 和深圳登录了\n微博现在的安全做的这么 happy 的吗 ？</p>",
+        "direction": "ltr"
+      },
+      "published": 1648801811000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844352#reply10"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "1fe77a32",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:167f:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844351",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[分享发现] 乐歌升降台 MX1 体验",
+      "updated": 1648802358000,
+      "author": "mrhhsg",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>在京东下单了一个 500 元价位的乐歌 MX1</p>\n<p>手动升降还是比较轻松，高度无级调整</p>\n<p>但是感觉不是很稳，升起来之后，打字会有一点晃动。。。</p>\n<p>已申请退货，下单了一个 900 块的 M9M 希望会不会晃了吧，明天到了试试看</p>",
+        "direction": "ltr"
+      },
+      "published": 1648801226000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844351#reply5"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "d44027d6",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:167e:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844350",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[程序员] gRPC 跑分分享(2022 03 15 bench results)",
+      "updated": 1648802363000,
+      "author": "hepin1989",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>直接贴来源： <a rel=\"nofollow\" href=\"https://github.com/LesnyRumcajs/grpc_bench/wiki/2022-03-15-bench-results\">https://github.com/LesnyRumcajs/grpc_bench/wiki/2022-03-15-bench-results</a></p>\n<p>总结：</p>\n<ol>\n<li>Rust 性能上天，资源利用高。</li>\n<li>CPP 不落王者</li>\n<li>Scala 机制优化</li>\n<li>Java 依然强悍</li>\n<li>Donet 有金主爸爸就是不一样</li>\n<li>Golang 名列前茅</li>\n<li>JavaScript 、PHP 、Ruby 洗洗睡了。</li>\n</ol>",
+        "direction": "ltr"
+      },
+      "published": 1648801204000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844350#reply4"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "733d6476",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:167d:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844349",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[酷工作] [杭州]招聘前端组长",
+      "updated": 1648802591000,
+      "author": "MMiller",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<ul>\n<li>业务方向：婚礼婚庆及婚品电商</li>\n<li>技术：Vue ，Uni-app ，Ts ，3 年以上前端</li>\n<li>岗位需求：前端开发组长</li>\n<li>待遇：15~20k ，双休，全额社保公积金</li>\n<li>地点：余杭区 EFC 英国中心</li>\n<li>官网：<a rel=\"nofollow\" href=\"http://www.hunshehui.com\">www.hunshehui.com</a></li>\n<li>简历投递： <a href=\"mailto:xuemingluan@hunshehui.cn\">xuemingluan@hunshehui.cn</a></li>\n</ul>",
+        "direction": "ltr"
+      },
+      "published": 1648801020000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844349#reply2"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "8b15a967",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:167c:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844348",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[酷工作] [2023 届实习生] 蚂蚁集团消费金融技术部实习生招聘",
+      "updated": 1648800799000,
+      "author": "flight2006",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "关于我们：<br> 蚂蚁消费金融技术部是蚂蚁践行科技助力普惠金融的重要技术战场，我们利用领先的智能风控、商业决策、高并发的架构与技术，为亿万花呗借呗客户提供安全、稳定，流畅的支付与信贷服务。<br> 在这里，你能进入商业与金融交织的时空，参与技术与商业融合创新的新征程，你能见证万亿资金在代码中穿梭，亲历双十一支付峰值带给你的紧张与踏实，感受科技践行普惠、服务实体的时代脉搏。<br> 消费金融技术期待与你相遇，与你共同成长！<br><br>招聘对象：<br>2022.11-2023.10 毕业的应届毕业生<br><br>招聘流程：<br>简历投递->在线笔试及测评->面试->发送录用意向书<br><br>岗位类型：<br>技术类：研发工程师 JAVA 、算法工程师-机器学习<br><br><br>工作地点：<br>杭州、北京、上海、重庆<br><br>联系邮箱：<br><a rel=\"nofollow noopener\" href=\"http://flight.tf\" target=\"_blank\">flight.tf</a>@antgroup.com",
+        "direction": "ltr"
+      },
+      "published": 1648800799000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844348#reply1"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "dd6e05a2",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:167b:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844347",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[分享发现] 这个网站挺酷",
+      "updated": 1648455173000,
+      "author": "googlefans",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<a rel=\"nofollow noopener\" href=\"https://stars.chromeexperiments.com\" target=\"_blank\">https://stars.chromeexperiments.com</a>",
+        "direction": "ltr"
+      },
+      "published": 1648800773000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844347#reply0"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "1351b249",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:167a:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844346",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[硬件] 想购置个笔记本或台式机，各位大佬给个意见",
+      "updated": 1648801559000,
+      "author": "panlatent",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>主要需求是解决疫情期间媳妇在家办公她的老笔记本太卡的问题，她正常上班时用公司电脑，下班后一般不用电脑。所以目前没有外出需求，笔记本台式都可。</p>\n<p>家里的设备目前有一个机柜（服务器和软路由）、一台 4k 显示器、Switch 、电视、我的 MBP 和其他苹果设备。</p>\n<p>操作系统肯定是要用到 Windows 的，目前有一下几个选择：</p>\n<ol>\n<li>\n<p>轻薄便携办公笔记本\n日后换工作有外出需求了也可以用，回家可以用，比较中意 surface 系列</p>\n</li>\n<li>\n<p>Mac\n目前媳妇用安卓手机，打算后续给她换成 iphone 比较喜欢苹果的生态，家庭方面体验应该会更好点。但用 mac 不用 macos 也没啥意义。</p>\n</li>\n<li>\n<p>游戏本或台式机\n这个主要是我想打打游戏，自从上个台式坏掉之后就很久没用过来台式了，但台式性价比和实际体验其实挺高的。游戏本兼顾了办公和游戏，只要不是通勤一般估计也我背着。</p>\n</li>\n</ol>\n<p>各位大佬有什么指导或推荐吗？</p>\n<p>另外想再购置一台 4k 显示器，目前都居家办公，家里是双屏幕支架，已有一台 2720qm ，另一台有什么好的推荐？再入个同型号整整齐齐？</p>",
+        "direction": "ltr"
+      },
+      "published": 1648800658000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844346#reply9"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "83d74a87",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1679:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844345",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[iPhone] iOS 15.4.1 你们刷了吗？费电问题改善没",
+      "updated": 1648771779000,
+      "author": "lxr760",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>设备是 13 Pro Max</p>\n<p>买来的时候是 15.0.1 。如果不开蜂窝，不开蓝牙。正常使用可以 3 天冲 1 次电。\n（不开蜂窝是插在 13 上面的套餐没流量，平时用安卓开热点给 iphone ipad 上网）</p>\n<p>因为 15.4 可以口罩识别，于是就升了。升级以后从 3 天一冲变成每天 1 冲。\n这续航 比之前差很多啊</p>\n<p>这会手机正在 OTA 升级 15.4.1 不知道有没有改善</p>",
+        "direction": "ltr"
+      },
+      "published": 1648800579000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844345#reply2"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "b463e272",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1678:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844344",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[酷工作] 美企招前端工程师",
+      "updated": 1648800573000,
+      "author": "atu0830",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>任职资格： ・ 本科及以上学历、计算机或相关专业 ・ 具有三年以上相关工作实际开发经验 ・ 具有以下语言及框架开发经历：PERN (PostgreSQL, Express.js, React, Node.js)。 可以接受远程办公，比如在家办公</p>\n<p>我们期望你： ・ 重视持续学习、持续进步以及持续试验的文化 ・ 具备在协作、敏捷的环境中高效工作的能力 ・ 能够与团队成员进行紧密合作 ・</p>\n<p>工作地点： 可远程在家工作</p>\n<p>联系方式：355jacky At <a rel=\"nofollow\" href=\"http://163.com\">163.com</a></p>",
+        "direction": "ltr"
+      },
+      "published": 1648800573000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844344#reply0"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "e1909122",
+      "id": "pj7RVXJzc3Dmxk5L8EDbnCCqotJbVBh7Mfkf/OAdxl0=_17fe45b2c5a:1677:855079c2",
+      "originId": "tag:www.v2ex.com,2022-04-01:/t/844343",
+      "origin": {
+        "title": "V2EX",
+        "streamId": "feed/http://www.v2ex.com/index.xml",
+        "htmlUrl": "https://www.v2ex.com/"
+      },
+      "title": "[问与答] [mysql]请问该 SQL 那个地方触发了临时表？",
+      "updated": 1648802043000,
+      "author": "shubiao",
+      "crawled": 1648803654746,
+      "content": {
+        "content": "<p>因为了解过一些 SQL 执行顺序，对该 SQL 有些不解的地方，为什么 having 后可用 select 中起的别名</p>\n<p>经 google 后得知触发了临时表，有懂得小伙伴烦请告知一下那个情况，如果还能能给解释一下，就更万分感谢了</p>\n<p>牛客网简单类题目： <a rel=\"nofollow\" href=\"https://www.nowcoder.com/practice/ddbcedcd9600403296038ee44a172f2d\">https://www.nowcoder.com/practice/ddbcedcd9600403296038ee44a172f2d</a></p>\n<pre><code>select \n    university,\n    avg(question_cnt) as avg_question_cnt,\n    avg(answer_cnt) as avg_answer_cnt\nfrom\n    user_profile\ngroup by \n    university \nhaving \n    avg_question_cnt &lt; 5\n    or \n    avg_answer_cnt &lt; 20\n</code></pre>\n<p>8 种触发临时表的情况： <a rel=\"nofollow\" href=\"https://www.w3cschool.cn/hjikt5/cir4pozt.html\">https://www.w3cschool.cn/hjikt5/cir4pozt.html</a></p>\n<p>1 、UNION 查询；</p>\n<p>2 、用到 TEMPTABLE 算法或者是 UNION 查询中的视图；</p>\n<p>3 、ORDER BY 和 GROUP BY 的子句不一样时；</p>\n<p>4 、表连接中，ORDER BY 的列不是驱动表中的；</p>\n<p>5 、DISTINCT 查询并且加上 ORDER BY 时；</p>\n<p>6 、SQL 中用到 SQL_SMALL_RESULT 选项时；</p>\n<p>7 、FROM 中的子查询；</p>\n<p>8 、子查询或者 semi-join 时创建的表；</p>",
+        "direction": "ltr"
+      },
+      "published": 1648800050000,
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://www.v2ex.com/t/844343#reply2"
+        }
+      ],
+      "visual": {
+        "contentType": "image/jpg",
+        "url": "http://www.blogcdn.com/www.engadget.com/media/2013/10/nvidia-shield-console-mode.jpg",
+        "width": 620,
+        "height": 340
+      },
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "bff93e44",
+      "id": "A3vaQwSaDdM/Zfjy4woUrm1x7iO4ZELfKpheragVWdQ=_17fe44dbe5c:15cb:855079c2",
+      "keywords": [
+        "亚太"
+      ],
+      "originId": "https://cn.nytimes.com/asia-pacific/20220401/north-korea-icbm-fake/",
+      "origin": {
+        "title": "纽约时报中文网 国际纵览",
+        "streamId": "feed/http://cn.nytimes.com/rss/news.xml",
+        "htmlUrl": "https://cn.nytimes.com"
+      },
+      "title": "朝鲜最新洲际导弹试射被指作假，但仍值得关注",
+      "author": "CHOE SANG-HUN",
+      "crawled": 1648802774620,
+      "published": 1648758094000,
+      "canonical": [
+        {
+          "type": "text/html",
+          "href": "https://cn.nytimes.com/asia-pacific/20220401/north-korea-icbm-fake/"
+        }
+      ],
+      "summary": {
+        "content": "韩国称朝鲜试射成功的是较早版本的洲际导弹，而非该国宣称的最新型号火星-17，目的是为了夸大该国核武库方面的成就，加强金正恩对美国和韩国的外交影响力。<p><img alt=\"朝鲜官方媒体提供的一张照片显示，3月24日，“火星-17”型导弹在朝鲜平壤国际机场成功试射。 Korean Central News Agency, via Associated Press\" src=\"https://static01.nyt.com/images/2022/03/31/world/31nkorea-01/31nkorea-01-articleLarge.jpg\"></p> <p>Korean Central News Agency, via Associated Press</p> <p>朝鲜官方媒体提供的一张照片显示，3月24日，“火星-17”型导弹在朝鲜平壤国际机场成功试射。</p>",
+        "direction": "ltr"
+      },
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://cn.nytimes.com/asia-pacific/20220401/north-korea-icbm-fake/?utm_source=RSS"
+        }
+      ],
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    },
+    {
+      "fingerprint": "f26e5862",
+      "id": "A3vaQwSaDdM/Zfjy4woUrm1x7iO4ZELfKpheragVWdQ=_17fe44dbe5c:15ca:855079c2",
+      "keywords": [
+        "中国"
+      ],
+      "originId": "https://cn.nytimes.com/china/20220401/hong-kong-china-covid/",
+      "origin": {
+        "title": "纽约时报中文网 国际纵览",
+        "streamId": "feed/http://cn.nytimes.com/rss/news.xml",
+        "htmlUrl": "https://cn.nytimes.com"
+      },
+      "title": "为何许多香港居民不欢迎内地医疗援助",
+      "author": "JOY DONG,王霜舟",
+      "crawled": 1648802774620,
+      "published": 1648755699000,
+      "canonical": [
+        {
+          "type": "text/html",
+          "href": "https://cn.nytimes.com/china/20220401/hong-kong-china-covid/"
+        }
+      ],
+      "summary": {
+        "content": "北京在香港医疗体系被疫情压倒后提供了大量援助，但一些香港居民批评北京的严厉措施损害个人自由，内地居民则认为香港人缺乏国家责任感，凸显了两地长期以来的文化分歧。<p><img alt=\"在已废弃的一条香港机场跑道上为新冠患者建设的隔离设施。 Jerome Favre/EPA, via Shutterstock\" src=\"https://static01.nyt.com/images/2022/03/30/world/00virus-hongkong-01/merlin_204739446_9102d874-f313-4531-8d9d-38e21f8d341c-articleLarge.jpg\"></p> <p>Jerome Favre/EPA, via Shutterstock</p> <p>在已废弃的一条香港机场跑道上为新冠患者建设的隔离设施。</p>",
+        "direction": "ltr"
+      },
+      "alternate": [
+        {
+          "type": "text/html",
+          "href": "https://cn.nytimes.com/china/20220401/hong-kong-china-covid/?utm_source=RSS"
+        }
+      ],
+      "unread": true,
+      "categories": [
+        {
+          "id": "user/b5070e82-dbd0-4a2e-b588-d86a83ee7ba4/category/4a440223-fa6e-4fe2-9359-483e8355f60c",
+          "label": "News"
+        }
+      ]
+    }
+  ]
+}
